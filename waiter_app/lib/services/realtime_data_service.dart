@@ -40,15 +40,36 @@ class RealTimeDataService extends ChangeNotifier {
   Stream<String> get notifications => _notificationController.stream;
 
   void initialize() {
+    // Only initialize if not already initialized
+    if (_webSocketSubscription != null) {
+      print('RealTimeDataService already initialized');
+      return;
+    }
+    
+    // Check if WebSocket service is connected
+    if (!_connectionService.webSocketService.isConnected) {
+      print('WebSocket service not connected, skipping initialization');
+      return;
+    }
+    
     // Listen to WebSocket messages
     _webSocketSubscription = _connectionService.webSocketService.messageStream
-        .listen(_handleWebSocketMessage);
+        .listen(
+          _handleWebSocketMessage,
+          onError: (error) {
+            print('WebSocket message stream error: $error');
+          },
+          onDone: () {
+            print('WebSocket message stream closed');
+          },
+        );
     
-    print('RealTimeDataService initialized');
+    print('RealTimeDataService initialized and listening to WebSocket messages');
   }
 
   void _handleWebSocketMessage(WebSocketMessage message) {
-    print('Handling real-time message: ${message.type}');
+    print('RealTimeDataService: Handling real-time message: ${message.type}');
+    print('Message data: ${message.data}');
 
     switch (message.type) {
       case WebSocketMessageType.tableStatusUpdate:

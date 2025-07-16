@@ -10,6 +10,7 @@ import 'package:shelf_router/shelf_router.dart';
 import '../database/database_helper.dart';
 import '../models/dining_table.dart';
 import '../models/order.dart';
+import '../models/order_item.dart';
 import '../models/product.dart';
 import '../models/server_info.dart';
 import '../models/websocket_message.dart';
@@ -537,7 +538,33 @@ class HttpServerService {
       try {
         final body = await request.readAsString();
         final data = jsonDecode(body);
-        final order = Order.fromJson(data);
+        
+        // Create order items with orderId set to 0 (will be set during database insertion)
+        final items = (data['items'] as List<dynamic>)
+            .map((itemData) => OrderItem(
+                  orderId: 0, // Temporary, will be set during database insertion
+                  productId: itemData['productId'] as int,
+                  productName: itemData['productName'] as String,
+                  quantity: itemData['quantity'] as int,
+                  unitPrice: (itemData['unitPrice'] as num).toDouble(),
+                  totalPrice: (itemData['totalPrice'] as num).toDouble(),
+                  createdAt: DateTime.now(),
+                ))
+            .toList();
+        
+        // Create the order
+        final order = Order(
+          tableId: data['tableId'] as int,
+          tableName: data['tableName'] as String,
+          items: items,
+          totalAmount: (data['totalAmount'] as num).toDouble(),
+          status: OrderStatus.values.firstWhere(
+            (e) => e.name == data['status'],
+            orElse: () => OrderStatus.pending,
+          ),
+          createdAt: DateTime.parse(data['createdAt'] as String),
+        );
+        
         final id = await _dbHelper.insertOrder(order);
 
         // Broadcast order created

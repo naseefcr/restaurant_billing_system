@@ -18,13 +18,7 @@ class WaiterApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => ServerConnectionService()),
         ChangeNotifierProvider(create: (context) => NetworkDiscoveryService()),
-        ChangeNotifierProvider(
-          create: (context) {
-            final service = RealTimeDataService();
-            service.initialize();
-            return service;
-          },
-        ),
+        ChangeNotifierProvider(create: (context) => RealTimeDataService()),
       ],
       child: MaterialApp(
         title: 'Restaurant Billing System - Waiter',

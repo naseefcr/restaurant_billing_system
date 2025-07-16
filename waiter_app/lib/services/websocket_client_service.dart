@@ -87,10 +87,11 @@ class WebSocketClientService extends ChangeNotifier {
 
   void _handleMessage(dynamic data) {
     try {
+      print('Raw WebSocket message received: $data');
       final messageData = jsonDecode(data as String);
       final message = WebSocketMessage.fromJson(messageData);
       
-      print('Received WebSocket message: ${message.type}');
+      print('Parsed WebSocket message: ${message.type} with data: ${message.data}');
       
       if (message.type == WebSocketMessageType.heartbeat) {
         _sendHeartbeatResponse();
@@ -98,8 +99,10 @@ class WebSocketClientService extends ChangeNotifier {
       }
       
       _messageController.add(message);
+      print('Message added to controller stream');
     } catch (e) {
       print('Error handling WebSocket message: $e');
+      print('Raw data was: $data');
     }
   }
 
