@@ -30,11 +30,8 @@ class NetworkDiscoveryService {
       
       // Listen for discovery requests
       _socket!.listen((RawSocketEvent event) {
-        print('UDP socket event: $event at ${DateTime.now()}');
         if (event == RawSocketEvent.read) {
           _handleDiscoveryRequest();
-        } else if (event == RawSocketEvent.write) {
-          print('UDP socket ready for writing');
         } else if (event == RawSocketEvent.closed) {
           print('UDP socket closed');
         }
@@ -59,31 +56,17 @@ class NetworkDiscoveryService {
     
     final datagram = _socket!.receive();
     if (datagram != null) {
-      print('Received UDP packet from ${datagram.address.address}:${datagram.port} - ${datagram.data.length} bytes');
-      
       try {
         final messageString = utf8.decode(datagram.data);
-        print('UDP message content: $messageString');
-        
         final message = jsonDecode(messageString);
-        print('Parsed UDP message: $message');
         
         if (message['type'] == 'discovery_request') {
-          print('✓ Valid discovery request from ${datagram.address.address}:${datagram.port}');
-          
           // Send immediate response to the requesting client
           _sendDiscoveryResponse(datagram.address, datagram.port);
-        } else {
-          print('Unknown message type: ${message['type']}');
         }
       } catch (e) {
-        // Log the raw data for debugging
-        print('Failed to parse UDP packet: $e');
-        print('Raw data: ${datagram.data}');
-        print('Data as string: ${String.fromCharCodes(datagram.data)}');
+        // Ignore malformed UDP packets
       }
-    } else {
-      print('Received null datagram despite read event');
     }
   }
 
@@ -99,14 +82,10 @@ class NetworkDiscoveryService {
       };
       
       final responseJson = jsonEncode(response);
-      print('Sending discovery response: $responseJson');
-      
       final data = utf8.encode(responseJson);
-      final sentBytes = _socket!.send(data, address, port);
-      
-      print('✓ Sent discovery response to ${address.address}:$port ($sentBytes bytes)');
+      _socket!.send(data, address, port);
     } catch (e) {
-      print('Error sending discovery response: $e');
+      // Ignore UDP send errors
     }
   }
 

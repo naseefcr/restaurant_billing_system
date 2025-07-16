@@ -68,8 +68,10 @@ class RealTimeDataService extends ChangeNotifier {
   }
 
   void _handleWebSocketMessage(WebSocketMessage message) {
-    print('RealTimeDataService: Handling real-time message: ${message.type}');
-    print('Message data: ${message.data}');
+    // Only log important messages, not heartbeats
+    if (message.type != WebSocketMessageType.heartbeat) {
+      print('RealTimeDataService: Handling message: ${message.type}');
+    }
 
     switch (message.type) {
       case WebSocketMessageType.tableStatusUpdate:
@@ -97,8 +99,14 @@ class RealTimeDataService extends ChangeNotifier {
         _handleSystemMessage(message);
         break;
 
+      case WebSocketMessageType.heartbeat:
+        // Heartbeat messages are handled by WebSocket client, don't log them
+        break;
       default:
-        print('Unhandled message type: ${message.type}');
+        // Only log truly unknown message types
+        if (message.type != WebSocketMessageType.heartbeat) {
+          print('Unhandled message type: ${message.type}');
+        }
     }
   }
 

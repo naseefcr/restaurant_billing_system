@@ -102,9 +102,7 @@ class WebSocketService {
       // Handle different message types
       switch (message.type) {
         case WebSocketMessageType.heartbeat:
-          // Respond to heartbeat
-          final response = WebSocketMessage.heartbeat(clientId: clientId);
-          _sendToClient(clientId, response);
+          // Client heartbeat response - no need to respond back
           break;
         case WebSocketMessageType.tableStatusUpdate:
         case WebSocketMessageType.orderUpdated:

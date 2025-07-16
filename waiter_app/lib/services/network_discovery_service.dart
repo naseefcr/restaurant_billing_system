@@ -48,16 +48,13 @@ class NetworkDiscoveryService extends ChangeNotifier {
       
       // Listen for server responses
       _socket!.listen((RawSocketEvent event) {
-        print('UDP client event: $event at ${DateTime.now()}');
         if (event == RawSocketEvent.read) {
           _handleServerResponse();
-        } else if (event == RawSocketEvent.write) {
-          print('UDP client ready for writing');
         }
       });
       
-      // Send discovery requests every 5 seconds
-      _discoveryTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      // Send discovery requests every 15 seconds (reduced frequency)
+      _discoveryTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
         _sendDiscoveryRequest();
       });
       

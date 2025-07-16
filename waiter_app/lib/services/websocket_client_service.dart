@@ -87,22 +87,19 @@ class WebSocketClientService extends ChangeNotifier {
 
   void _handleMessage(dynamic data) {
     try {
-      print('Raw WebSocket message received: $data');
       final messageData = jsonDecode(data as String);
       final message = WebSocketMessage.fromJson(messageData);
-      
-      print('Parsed WebSocket message: ${message.type} with data: ${message.data}');
       
       if (message.type == WebSocketMessageType.heartbeat) {
         _sendHeartbeatResponse();
         return;
       }
       
+      // Only log non-heartbeat messages
+      print('Received WebSocket message: ${message.type}');
       _messageController.add(message);
-      print('Message added to controller stream');
     } catch (e) {
       print('Error handling WebSocket message: $e');
-      print('Raw data was: $data');
     }
   }
 
@@ -139,10 +136,10 @@ class WebSocketClientService extends ChangeNotifier {
   }
 
   void _startHeartbeat() {
+    // Client doesn't send periodic heartbeats, only responds to server heartbeats
+    // This prevents heartbeat feedback loops
     _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _sendHeartbeat();
-    });
+    _heartbeatTimer = null;
   }
 
   void _stopHeartbeat() {
@@ -151,10 +148,8 @@ class WebSocketClientService extends ChangeNotifier {
   }
 
   void _sendHeartbeat() {
-    if (isConnected) {
-      final heartbeat = WebSocketMessage.heartbeat(clientId: 'waiter_app');
-      _sendMessage(heartbeat);
-    }
+    // Client doesn't send periodic heartbeats, only responds to server heartbeats
+    // This method is kept for potential future use
   }
 
   void _sendHeartbeatResponse() {
