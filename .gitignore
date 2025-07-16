@@ -1,0 +1,24 @@
+# Flutter/Dart (all projects)
+**/build/
+**/.dart_tool/
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/pubspec.lock
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Environment files
+.env*
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+**/android/app/upload-keystore.jks
+**/ios/Runner.xcworkspace/
