@@ -17,8 +17,10 @@ class NetworkDiscoveryService extends ChangeNotifier {
   RawDatagramSocket? _socket;
   Timer? _discoveryTimer;
   Timer? _cleanupTimer;
+  Timer? _networkCheckTimer;
   
   final Map<String, DiscoveredServer> _discoveredServers = {};
+  String? _lastKnownLocalIp;
   final StreamController<DiscoveredServer> _serverDiscoveredController = 
       StreamController<DiscoveredServer>.broadcast();
   final StreamController<String> _serverLostController = 
@@ -40,6 +42,10 @@ class NetworkDiscoveryService extends ChangeNotifier {
     try {
       // Log network interface information first
       await _logNetworkInterfaces();
+      
+      // Get current local IP
+      _lastKnownLocalIp = await _getCurrentLocalIp();
+      print('Starting discovery with local IP: $_lastKnownLocalIp');
       
       _socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
       _socket!.broadcastEnabled = true;
@@ -63,6 +69,11 @@ class NetworkDiscoveryService extends ChangeNotifier {
         _cleanupOfflineServers();
       });
       
+      // Monitor network changes every 10 seconds
+      _networkCheckTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+        _checkNetworkChanges();
+      });
+      
       // Send initial discovery request
       _sendDiscoveryRequest();
       
@@ -80,6 +91,9 @@ class NetworkDiscoveryService extends ChangeNotifier {
     
     _cleanupTimer?.cancel();
     _cleanupTimer = null;
+    
+    _networkCheckTimer?.cancel();
+    _networkCheckTimer = null;
     
     _socket?.close();
     _socket = null;
@@ -363,6 +377,87 @@ class NetworkDiscoveryService extends ChangeNotifier {
     _serverDiscoveredController.close();
     _serverLostController.close();
     super.dispose();
+  }
+
+  Future<void> _checkNetworkChanges() async {
+    try {
+      final currentIp = await _getCurrentLocalIp();
+      
+      if (currentIp != _lastKnownLocalIp) {
+        print('Network change detected: $_lastKnownLocalIp -> $currentIp');
+        _lastKnownLocalIp = currentIp;
+        
+        // Clear old discovered servers as they might be stale
+        _discoveredServers.clear();
+        notifyListeners();
+        
+        // Restart discovery with new network configuration
+        await _restartDiscovery();
+      }
+    } catch (e) {
+      print('Error checking network changes: $e');
+    }
+  }
+
+  Future<void> _restartDiscovery() async {
+    print('Restarting discovery due to network change');
+    
+    try {
+      // Close existing socket
+      _socket?.close();
+      
+      // Create new socket
+      _socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      _socket!.broadcastEnabled = true;
+      
+      // Start listening again
+      _socket!.listen((RawSocketEvent event) {
+        if (event == RawSocketEvent.read) {
+          _handleServerResponse();
+        }
+      });
+      
+      print('Discovery restarted on new port: ${_socket!.port}');
+      
+      // Send immediate discovery request
+      _sendDiscoveryRequest();
+      
+    } catch (e) {
+      print('Error restarting discovery: $e');
+    }
+  }
+
+  Future<String?> _getCurrentLocalIp() async {
+    try {
+      final interfaces = await NetworkInterface.list();
+      
+      for (final interface in interfaces) {
+        for (final address in interface.addresses) {
+          if (address.type == InternetAddressType.IPv4 && 
+              !address.isLoopback && 
+              !address.isLinkLocal) {
+            return address.address;
+          }
+        }
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error getting current local IP: $e');
+      return null;
+    }
+  }
+
+  // Manual refresh method for UI
+  Future<void> refreshDiscovery() async {
+    print('Manually refreshing discovery');
+    
+    // Clear existing servers
+    _discoveredServers.clear();
+    notifyListeners();
+    
+    // Restart discovery
+    await _restartDiscovery();
   }
 
   Future<void> _logNetworkInterfaces() async {

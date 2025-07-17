@@ -35,6 +35,24 @@ class _WaiterHomeScreenState extends State<WaiterHomeScreen>
     // Start network discovery automatically
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startNetworkDiscovery();
+      _setupRealtimeListeners();
+    });
+  }
+
+  void _setupRealtimeListeners() {
+    // Listen for real-time order updates
+    final realtimeService = context.read<RealTimeDataService>();
+    
+    realtimeService.orderUpdates.listen((order) {
+      setState(() {
+        // Update the order in the local list
+        final index = _orders.indexWhere((o) => o.id == order.id);
+        if (index != -1) {
+          _orders[index] = order;
+        } else {
+          _orders.add(order);
+        }
+      });
     });
   }
 
@@ -108,6 +126,32 @@ class _WaiterHomeScreenState extends State<WaiterHomeScreen>
       _products = realtimeService.productsCache.values.toList();
       _orders = realtimeService.ordersCache.values.toList();
     });
+  }
+
+  Future<void> _refreshOrderData() async {
+    try {
+      final connectionService = context.read<ServerConnectionService>();
+      final realtimeService = context.read<RealTimeDataService>();
+      
+      // Fetch fresh order data from server
+      final ordersResponse = await connectionService.getOrders();
+      
+      if (ordersResponse['success'] == true) {
+        final orders = (ordersResponse['data'] as List)
+            .map((item) => Order.fromJson(item))
+            .toList();
+        
+        // Update cache with fresh data
+        realtimeService.updateOrdersCache(orders);
+        
+        // Update local state
+        setState(() {
+          _orders = orders;
+        });
+      }
+    } catch (e) {
+      print('Error refreshing order data: $e');
+    }
   }
 
   Future<void> _fetchInitialData() async {
@@ -952,6 +996,9 @@ class _WaiterHomeScreenState extends State<WaiterHomeScreen>
       };
 
       await connectionService.createOrder(orderData);
+      
+      // Refresh order data after successful submission
+      await _refreshOrderData();
 
       setState(() {
         _currentOrderItems.clear();

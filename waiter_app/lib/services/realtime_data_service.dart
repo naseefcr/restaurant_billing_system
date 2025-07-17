@@ -74,8 +74,8 @@ class RealTimeDataService extends ChangeNotifier {
 
   void _handleConnectionStatusChange() {
     if (_connectionService.webSocketService.isConnected) {
-      print('WebSocket reconnected - requesting full data sync');
-      _requestFullDataSync();
+      print('WebSocket reconnected - reinitializing real-time service');
+      _reinitializeAfterReconnection();
     } else {
       print('WebSocket disconnected - marking connection as lost');
       _handleConnectionLost();
@@ -91,7 +91,26 @@ class RealTimeDataService extends ChangeNotifier {
     _notificationController.add('Connection lost - data may be outdated');
   }
 
-  void _requestFullDataSync() {
+  void _reinitializeAfterReconnection() {
+    print('Reinitializing RealTimeDataService after reconnection');
+    
+    // Cancel existing subscription if any
+    _webSocketSubscription?.cancel();
+    
+    // Re-establish WebSocket message listener
+    _webSocketSubscription = _connectionService.webSocketService.messageStream
+        .listen(
+          _handleWebSocketMessage,
+          onError: (error) {
+            print('WebSocket message stream error: $error');
+            _handleConnectionLost();
+          },
+          onDone: () {
+            print('WebSocket message stream closed');
+            _handleConnectionLost();
+          },
+        );
+    
     // Request fresh data from server after reconnection
     Timer(Duration(milliseconds: 500), () {
       if (_connectionService.webSocketService.isConnected) {
@@ -99,6 +118,8 @@ class RealTimeDataService extends ChangeNotifier {
         _notificationController.add('Data synchronized with server');
       }
     });
+    
+    print('RealTimeDataService reinitialized and listening to WebSocket messages');
   }
 
   void _handleWebSocketMessage(WebSocketMessage message) {
@@ -223,6 +244,7 @@ class RealTimeDataService extends ChangeNotifier {
             _ordersCache[order.id!] = order;
             _orderUpdateController.add(order);
             _notificationController.add('New order #${order.id} created for table ${order.tableName}');
+            print('Order created and added to cache: ${order.id}');
           }
           break;
 
@@ -344,6 +366,7 @@ class RealTimeDataService extends ChangeNotifier {
       }
     }
     notifyListeners();
+    print('Orders cache updated with ${orders.length} orders');
   }
 
   void updateProductsCache(List<Product> products) {
@@ -405,10 +428,10 @@ class RealTimeDataService extends ChangeNotifier {
     // Force WebSocket reconnection
     _connectionService.webSocketService.forceReconnect();
     
-    // Request fresh data after a short delay
+    // Reinitialize after a short delay
     Timer(Duration(seconds: 2), () {
       if (_connectionService.webSocketService.isConnected) {
-        requestFullSync();
+        _reinitializeAfterReconnection();
         _notificationController.add('Connection refreshed successfully');
       }
     });

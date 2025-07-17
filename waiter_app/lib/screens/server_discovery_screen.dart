@@ -49,6 +49,30 @@ class _ServerDiscoveryScreenState extends State<ServerDiscoveryScreen> {
     }
   }
 
+  Future<void> _refreshDiscovery(NetworkDiscoveryService service) async {
+    try {
+      await service.refreshDiscovery();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Discovery refreshed - scanning for servers...'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error refreshing discovery: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _addServerManually() async {
     if (_manualIpController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -177,9 +201,18 @@ class _ServerDiscoveryScreenState extends State<ServerDiscoveryScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Chip(
-                  label: Text('${service.serverCount} servers'),
-                  backgroundColor: service.serverCount > 0 ? Colors.green : Colors.grey,
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => _refreshDiscovery(service),
+                      icon: const Icon(Icons.refresh),
+                      tooltip: 'Refresh Discovery',
+                    ),
+                    Chip(
+                      label: Text('${service.serverCount} servers'),
+                      backgroundColor: service.serverCount > 0 ? Colors.green : Colors.grey,
+                    ),
+                  ],
                 ),
               ],
             ),
