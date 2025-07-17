@@ -53,6 +53,54 @@ class _WaiterHomeScreenState extends State<WaiterHomeScreen>
     }
   }
 
+  Widget _buildConnectionHealthIndicator() {
+    return Consumer<RealTimeDataService>(
+      builder: (context, realtimeService, child) {
+        final connectionService = context.watch<ServerConnectionService>();
+        final isConnected = connectionService.isConnected;
+        final isHealthy = realtimeService.isConnectionHealthy;
+        
+        Color iconColor;
+        IconData iconData;
+        String tooltip;
+        
+        if (!isConnected) {
+          iconColor = Colors.red;
+          iconData = Icons.wifi_off;
+          tooltip = 'Disconnected';
+        } else if (!isHealthy) {
+          iconColor = Colors.orange;
+          iconData = Icons.warning;
+          tooltip = 'Connection may be stale';
+        } else {
+          iconColor = Colors.green;
+          iconData = Icons.wifi;
+          tooltip = 'Connected and healthy';
+        }
+        
+        return Tooltip(
+          message: tooltip,
+          child: Icon(
+            iconData,
+            color: iconColor,
+          ),
+        );
+      },
+    );
+  }
+
+  void _refreshConnection() {
+    final realtimeService = context.read<RealTimeDataService>();
+    realtimeService.refreshConnection();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Refreshing connection...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _loadRealtimeData() {
     final realtimeService = context.read<RealTimeDataService>();
     setState(() {
@@ -123,12 +171,12 @@ class _WaiterHomeScreenState extends State<WaiterHomeScreen>
             builder: (context, connectionService, child) {
               return Row(
                 children: [
-                  Icon(
-                    connectionService.isConnected ? Icons.wifi : Icons.wifi_off,
-                    color:
-                        connectionService.isConnected
-                            ? Colors.green
-                            : Colors.red,
+                  _buildConnectionHealthIndicator(),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: _refreshConnection,
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Refresh Connection',
                   ),
                   const SizedBox(width: 8),
                   IconButton(

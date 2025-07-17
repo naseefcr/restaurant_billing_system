@@ -19,12 +19,15 @@ class WebSocketClientService extends ChangeNotifier {
   String? _errorMessage;
   Timer? _heartbeatTimer;
   Timer? _reconnectTimer;
+  Timer? _connectionHealthTimer;
   
   String? _serverHost;
   int? _webSocketPort;
   int _reconnectAttempts = 0;
+  DateTime? _lastHeartbeatReceived;
   static const int maxReconnectAttempts = 5;
   static const Duration reconnectDelay = Duration(seconds: 3);
+  static const Duration heartbeatTimeout = Duration(seconds: 60);
   
   final StreamController<WebSocketMessage> _messageController = 
       StreamController<WebSocketMessage>.broadcast();
@@ -60,9 +63,11 @@ class WebSocketClientService extends ChangeNotifier {
       _updateStatus(WebSocketConnectionStatus.connected);
       _reconnectAttempts = 0;
       _errorMessage = null;
+      _lastHeartbeatReceived = DateTime.now();
       
       _startListening();
       _startHeartbeat();
+      _startConnectionHealthMonitoring();
       
       print('WebSocket connected successfully');
       return true;
@@ -91,6 +96,7 @@ class WebSocketClientService extends ChangeNotifier {
       final message = WebSocketMessage.fromJson(messageData);
       
       if (message.type == WebSocketMessageType.heartbeat) {
+        _lastHeartbeatReceived = DateTime.now();
         _sendHeartbeatResponse();
         return;
       }
@@ -107,6 +113,7 @@ class WebSocketClientService extends ChangeNotifier {
     print('WebSocket disconnected');
     _updateStatus(WebSocketConnectionStatus.disconnected);
     _stopHeartbeat();
+    _stopConnectionHealthMonitoring();
     _scheduleReconnect();
   }
 
@@ -115,6 +122,7 @@ class WebSocketClientService extends ChangeNotifier {
     _errorMessage = error.toString();
     _updateStatus(WebSocketConnectionStatus.error);
     _stopHeartbeat();
+    _stopConnectionHealthMonitoring();
     _scheduleReconnect();
   }
 
@@ -145,6 +153,42 @@ class WebSocketClientService extends ChangeNotifier {
   void _stopHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
+  }
+
+  void _startConnectionHealthMonitoring() {
+    _connectionHealthTimer?.cancel();
+    _connectionHealthTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+      _checkConnectionHealth();
+    });
+  }
+
+  void _stopConnectionHealthMonitoring() {
+    _connectionHealthTimer?.cancel();
+    _connectionHealthTimer = null;
+  }
+
+  void _checkConnectionHealth() {
+    if (_status != WebSocketConnectionStatus.connected) return;
+    
+    final now = DateTime.now();
+    if (_lastHeartbeatReceived != null) {
+      final timeSinceLastHeartbeat = now.difference(_lastHeartbeatReceived!);
+      
+      if (timeSinceLastHeartbeat > heartbeatTimeout) {
+        print('WebSocket connection health check failed - no heartbeat for ${timeSinceLastHeartbeat.inSeconds} seconds');
+        _forceReconnect();
+      }
+    }
+  }
+
+  void _forceReconnect() {
+    print('Forcing WebSocket reconnection due to stale connection');
+    _channel?.sink.close();
+    _channel = null;
+    _updateStatus(WebSocketConnectionStatus.disconnected);
+    _stopHeartbeat();
+    _stopConnectionHealthMonitoring();
+    _scheduleReconnect();
   }
 
   void _sendHeartbeat() {
@@ -202,6 +246,21 @@ class WebSocketClientService extends ChangeNotifier {
     _sendMessage(message);
   }
 
+  // Method to manually test connection health
+  bool get isConnectionHealthy {
+    if (_status != WebSocketConnectionStatus.connected) return false;
+    if (_lastHeartbeatReceived == null) return false;
+    
+    final timeSinceLastHeartbeat = DateTime.now().difference(_lastHeartbeatReceived!);
+    return timeSinceLastHeartbeat < heartbeatTimeout;
+  }
+
+  // Method to manually trigger reconnection
+  void forceReconnect() {
+    print('Manually triggering WebSocket reconnection');
+    _forceReconnect();
+  }
+
   void _updateStatus(WebSocketConnectionStatus newStatus) {
     if (_status != newStatus) {
       _status = newStatus;
@@ -215,6 +274,7 @@ class WebSocketClientService extends ChangeNotifier {
     
     _reconnectTimer?.cancel();
     _stopHeartbeat();
+    _stopConnectionHealthMonitoring();
     
     _channel?.sink.close();
     _channel = null;
@@ -222,6 +282,7 @@ class WebSocketClientService extends ChangeNotifier {
     _updateStatus(WebSocketConnectionStatus.disconnected);
     _reconnectAttempts = 0;
     _errorMessage = null;
+    _lastHeartbeatReceived = null;
     
     print('WebSocket disconnected');
   }

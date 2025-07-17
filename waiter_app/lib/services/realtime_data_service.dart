@@ -58,13 +58,47 @@ class RealTimeDataService extends ChangeNotifier {
           _handleWebSocketMessage,
           onError: (error) {
             print('WebSocket message stream error: $error');
+            _handleConnectionLost();
           },
           onDone: () {
             print('WebSocket message stream closed');
+            _handleConnectionLost();
           },
         );
     
+    // Listen to connection status changes
+    _connectionService.addListener(_handleConnectionStatusChange);
+    
     print('RealTimeDataService initialized and listening to WebSocket messages');
+  }
+
+  void _handleConnectionStatusChange() {
+    if (_connectionService.webSocketService.isConnected) {
+      print('WebSocket reconnected - requesting full data sync');
+      _requestFullDataSync();
+    } else {
+      print('WebSocket disconnected - marking connection as lost');
+      _handleConnectionLost();
+    }
+  }
+
+  void _handleConnectionLost() {
+    print('RealTimeDataService: Connection lost, cleaning up');
+    _webSocketSubscription?.cancel();
+    _webSocketSubscription = null;
+    
+    // Optionally clear caches or mark data as stale
+    _notificationController.add('Connection lost - data may be outdated');
+  }
+
+  void _requestFullDataSync() {
+    // Request fresh data from server after reconnection
+    Timer(Duration(milliseconds: 500), () {
+      if (_connectionService.webSocketService.isConnected) {
+        requestFullSync();
+        _notificationController.add('Data synchronized with server');
+      }
+    });
   }
 
   void _handleWebSocketMessage(WebSocketMessage message) {
@@ -364,9 +398,31 @@ class RealTimeDataService extends ChangeNotifier {
     _connectionService.webSocketService.requestSync('products');
   }
 
+  // Method to manually refresh connection and data
+  void refreshConnection() {
+    print('Manually refreshing WebSocket connection and data');
+    
+    // Force WebSocket reconnection
+    _connectionService.webSocketService.forceReconnect();
+    
+    // Request fresh data after a short delay
+    Timer(Duration(seconds: 2), () {
+      if (_connectionService.webSocketService.isConnected) {
+        requestFullSync();
+        _notificationController.add('Connection refreshed successfully');
+      }
+    });
+  }
+
+  // Check if connection is healthy
+  bool get isConnectionHealthy {
+    return _connectionService.webSocketService.isConnectionHealthy;
+  }
+
   @override
   void dispose() {
     _webSocketSubscription?.cancel();
+    _connectionService.removeListener(_handleConnectionStatusChange);
     _tableUpdateController.close();
     _orderUpdateController.close();
     _productUpdateController.close();

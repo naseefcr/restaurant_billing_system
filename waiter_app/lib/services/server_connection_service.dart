@@ -88,6 +88,9 @@ class ServerConnectionService extends ChangeNotifier {
         throw Exception('Failed to connect to WebSocket');
       }
 
+      // Listen to WebSocket status changes
+      _webSocketService.addListener(_handleWebSocketStatusChange);
+
       _updateStatus(ConnectionStatus.connected);
       
       print('Successfully connected to server: ${server.serverInfo.ipAddress}');
@@ -108,6 +111,7 @@ class ServerConnectionService extends ChangeNotifier {
 
 
   void disconnect() {
+    _webSocketService.removeListener(_handleWebSocketStatusChange);
     _webSocketService.disconnect();
     
     _connectedServer = null;
@@ -115,6 +119,31 @@ class ServerConnectionService extends ChangeNotifier {
     _updateStatus(ConnectionStatus.disconnected);
     
     print('Disconnected from server');
+  }
+
+  void _handleWebSocketStatusChange() {
+    final wsStatus = _webSocketService.status;
+    print('WebSocket status changed to: ${wsStatus.name}');
+    
+    switch (wsStatus) {
+      case WebSocketConnectionStatus.connected:
+        if (_status != ConnectionStatus.connected) {
+          _updateStatus(ConnectionStatus.connected);
+        }
+        break;
+      case WebSocketConnectionStatus.connecting:
+      case WebSocketConnectionStatus.reconnecting:
+        if (_status == ConnectionStatus.connected) {
+          _updateStatus(ConnectionStatus.reconnecting);
+        }
+        break;
+      case WebSocketConnectionStatus.disconnected:
+      case WebSocketConnectionStatus.error:
+        if (_status == ConnectionStatus.connected) {
+          _updateStatus(ConnectionStatus.error);
+        }
+        break;
+    }
   }
 
 
