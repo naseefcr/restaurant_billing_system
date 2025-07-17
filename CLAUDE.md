@@ -33,12 +33,14 @@ A comprehensive Flutter-based restaurant management system consisting of two int
 - **Connection**: Discovers and connects to cashier app automatically
 
 ## Key Features
-- **Real-time Synchronization**: Changes reflect immediately across all apps
-- **Automatic Discovery**: Waiter apps automatically find cashier app on network
+- **Real-time Synchronization**: Changes reflect immediately across all apps with reconnection recovery
+- **Automatic Discovery**: Waiter apps automatically find cashier app with network change detection
 - **Color-coded Status**: Visual table status (Green/Red/Yellow/Grey)
 - **Multi-client Support**: Multiple waiter apps can connect simultaneously
-- **Order Management**: Complete order lifecycle from creation to billing
-- **Network Resilience**: Automatic reconnection and error handling
+- **Order Management**: Complete order lifecycle from creation to billing with live updates
+- **Network Resilience**: Automatic reconnection, health monitoring, and error recovery
+- **Connection Health Monitoring**: Visual indicators and automatic stale connection detection
+- **Manual Recovery Options**: Refresh buttons for connection and discovery troubleshooting
 
 ## Technology Stack
 - **Framework**: Flutter
@@ -55,9 +57,11 @@ A comprehensive Flutter-based restaurant management system consisting of two int
 - **ServerInfo**: Server discovery and connection information
 
 ## Network Communication
-- **HTTP REST API**: CRUD operations for data management
-- **WebSocket**: Real-time bidirectional communication
-- **UDP Broadcast**: Automatic server discovery mechanism
+- **HTTP REST API**: CRUD operations for data management with health checks
+- **WebSocket**: Real-time bidirectional communication with heartbeat monitoring
+- **UDP Broadcast**: Automatic server discovery with network change detection
+- **Connection Health**: Automatic monitoring and recovery mechanisms
+- **Data Synchronization**: Real-time updates with automatic resync after reconnection
 
 ## Installation & Setup
 1. Clone the repository
@@ -101,14 +105,26 @@ See individual CLAUDE.md files in each app directory for detailed API endpoints 
 - Basic validation for order data
 - Connection authentication via client identification
 
+## Recent Enhancements
+- **Network Change Detection**: Automatic discovery restart when IP changes
+- **Connection Health Monitoring**: Visual indicators and heartbeat timeout detection
+- **Real-time Sync Recovery**: Automatic WebSocket listener reinitialization after reconnection
+- **Manual Refresh Capabilities**: User-initiated connection and discovery refresh
+- **Order Submission Fixes**: Immediate UI updates after order creation
+- **Comprehensive Testing Guide**: Detailed functional testing scenarios
+
 ## Future Enhancements
 - User authentication and role management
 - Advanced reporting and analytics
 - Menu management interface
 - Kitchen display system integration
 - Payment processing integration
+- Offline mode with sync when reconnected
 
 ## Support
 - Check individual app CLAUDE.md files for specific troubleshooting
 - Verify network connectivity for connection issues
 - Review console logs for debugging information
+- Use manual refresh buttons for connection recovery
+- Check connection health indicators for status
+- Refer to FUNCTIONAL_TESTING_GUIDE.md for comprehensive testing scenarios

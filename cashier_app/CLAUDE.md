@@ -88,10 +88,12 @@ flutter clean && flutter pub get
 - `shelf_cors_headers`: CORS support
 
 ## Real-time Features
-- Table status updates broadcast to all connected clients
-- Order creation/updates synchronized across apps
-- Product availability changes reflected immediately
-- Client connection/disconnection handling
+- Table status updates broadcast to all connected clients with bidirectional sync
+- Order creation/updates synchronized across apps with immediate notifications
+- Product availability changes reflected immediately across all clients
+- Client connection/disconnection handling with automatic recovery
+- Heartbeat monitoring to maintain connection health
+- Automatic client reconnection support with data resynchronization
 
 ## Testing
 - Unit tests for database operations
@@ -101,8 +103,11 @@ flutter clean && flutter pub get
 ## Troubleshooting
 - **Connection Issues**: Check firewall settings for ports 8080, 8081, 8082
 - **Database Errors**: Clear app data or reinstall to reset database
-- **Real-time Sync**: Verify WebSocket connections in logs
+- **Real-time Sync**: Verify WebSocket connections in logs and check heartbeat monitoring
 - **Network Discovery**: Ensure UDP broadcast is enabled on network
+- **Client Reconnection**: Monitor WebSocket client connections and heartbeat responses
+- **Network Changes**: Server automatically adapts to IP changes and broadcasts discovery
+- **Performance**: Monitor console logs for excessive messages or connection issues
 
 ## Color Coding System
 - **Green**: Available tables
