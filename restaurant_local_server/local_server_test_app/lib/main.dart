@@ -358,91 +358,10 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildServerControlTab() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Server Status',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text('Status: '),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              _serverStatus == 'running'
-                                  ? Colors.green
-                                  : Colors.red,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          _serverStatus,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text('Health: '),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              _serverHealth == 'healthy'
-                                  ? Colors.green
-                                  : Colors.orange,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          _serverHealth,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ElevatedButton(
-                onPressed: _serverStatus == 'stopped' ? _startServer : null,
-                child: const Text('Start Server'),
-              ),
-              ElevatedButton(
-                onPressed: _serverStatus == 'running' ? _stopServer : null,
-                child: const Text('Stop Server'),
-              ),
-              ElevatedButton(
-                onPressed: _serverStatus == 'running' ? _restartServer : null,
-                child: const Text('Restart Server'),
-              ),
-              ElevatedButton(
-                onPressed:
-                    _serverStatus == 'running' ? _broadcastTestUpdate : null,
-                child: const Text('Broadcast Test'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (_serverStats.isNotEmpty) ...[
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -450,22 +369,105 @@ class _MyHomePageState extends State<MyHomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Server Statistics',
+                      'Server Status',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
-                    ..._serverStats.entries.map(
-                      (entry) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Text('${entry.key}: ${entry.value}'),
-                      ),
+                    Row(
+                      children: [
+                        Text('Status: '),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                _serverStatus == 'running'
+                                    ? Colors.green
+                                    : Colors.red,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            _serverStatus,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Text('Health: '),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                _serverHealth == 'healthy'
+                                    ? Colors.green
+                                    : Colors.orange,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            _serverHealth,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ElevatedButton(
+                  onPressed: _serverStatus == 'stopped' ? _startServer : null,
+                  child: const Text('Start Server'),
+                ),
+                ElevatedButton(
+                  onPressed: _serverStatus == 'running' ? _stopServer : null,
+                  child: const Text('Stop Server'),
+                ),
+                ElevatedButton(
+                  onPressed: _serverStatus == 'running' ? _restartServer : null,
+                  child: const Text('Restart Server'),
+                ),
+                ElevatedButton(
+                  onPressed:
+                      _serverStatus == 'running' ? _broadcastTestUpdate : null,
+                  child: const Text('Broadcast Test'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_serverStats.isNotEmpty) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Server Statistics',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      ..._serverStats.entries.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Text('${entry.key}: ${entry.value}'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

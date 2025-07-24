@@ -1,36 +1,58 @@
 # Restaurant Billing System
 
 ## Project Overview
-A comprehensive Flutter-based restaurant management system consisting of two interconnected mobile applications: a cashier app (server) and a waiter app (client). The system provides real-time synchronization, order management, and table status tracking.
+A comprehensive Flutter-based local networking solution that evolved from a restaurant management system proof-of-concept into a reusable package for building local server applications with real-time synchronization capabilities.
+
+## Repository Structure
+
+### Main Package: `restaurant_local_server/`
+A generic, reusable Flutter package providing local networking infrastructure:
+- UDP-based network discovery
+- HTTP REST API server with CRUD support
+- Multi-client WebSocket server with real-time sync
+- Service orchestration and health monitoring
+- Production-ready with comprehensive error handling
+
+### Example Applications
+Two Flutter applications demonstrating the package capabilities:
+
+#### `cashier_app/` (Server Example)
+- **Role**: Example server application using the package
+- **Database**: SQLite for persistent data storage
+- **Features**: Order management, billing, table status, product catalog
+- **Purpose**: Demonstrates server-side implementation patterns
+
+#### `waiter_app/` (Client Example)  
+- **Role**: Example client application connecting to server
+- **Storage**: In-memory caching with real-time updates
+- **Features**: Table status viewing, order creation, server discovery
+- **Purpose**: Demonstrates client-side connection and usage patterns
+
+### Package Test Application: `restaurant_local_server/local_server_test_app/`
+- **Role**: Dedicated test application for package development
+- **Purpose**: Testing package functionality in isolation
+- **Features**: All networking capabilities without business logic
 
 ## System Architecture
 ```
-┌─────────────────┐    Real-time Sync    ┌─────────────────┐
-│   Cashier App   │◄──────────────────────►│   Waiter App    │
-│   (Server)      │                       │   (Client)      │
-│                 │                       │                 │
-│ • SQLite DB     │    HTTP REST API     │ • Memory Cache  │
-│ • HTTP Server   │    WebSocket         │ • HTTP Client   │
-│ • WebSocket     │    UDP Discovery     │ • WebSocket     │
-│ • UDP Broadcast │                       │ • UDP Listen    │
-└─────────────────┘                       └─────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                Restaurant Local Server Package             │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
+│  │ UDP Discovery   │  │  HTTP Server    │  │ WebSocket    │ │
+│  │    Service      │  │   (REST API)    │  │   Server     │ │
+│  └─────────────────┘  └─────────────────┘  └──────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+              │                    │                    │
+              ▼                    ▼                    ▼
+┌─────────────────┐    HTTP/WS     ┌─────────────────┐
+│   Server App    │◄──────────────►│   Client App    │
+│  (Cashier)      │                │   (Waiter)      │
+│                 │  Real-time     │                 │
+│ • Business      │  Sync &        │ • UI Layer      │
+│   Logic         │  Discovery     │ • State Mgmt    │
+│ • Data Storage  │                │ • User Actions  │
+└─────────────────┘                └─────────────────┘
 ```
-
-## Applications
-
-### Cashier App (Server)
-- **Role**: Main server application
-- **Database**: SQLite for persistent data storage
-- **Services**: HTTP REST API, WebSocket server, UDP discovery
-- **Features**: Order management, billing, table status, product catalog
-- **Ports**: 8080 (HTTP), 8081 (WebSocket), 8082 (UDP)
-
-### Waiter App (Client)
-- **Role**: Client application for waiters
-- **Storage**: In-memory caching with real-time updates
-- **Services**: HTTP client, WebSocket client, UDP discovery
-- **Features**: Table status viewing, order creation, server discovery
-- **Connection**: Discovers and connects to cashier app automatically
 
 ## Key Features
 - **Real-time Synchronization**: Changes reflect immediately across all apps with reconnection recovery
@@ -42,89 +64,155 @@ A comprehensive Flutter-based restaurant management system consisting of two int
 - **Connection Health Monitoring**: Visual indicators and automatic stale connection detection
 - **Manual Recovery Options**: Refresh buttons for connection and discovery troubleshooting
 
+## Package Features (restaurant_local_server)
+- **UDP Network Discovery**: Automatic server discovery across local networks
+- **WebSocket Server**: Multi-client real-time communication with heartbeat monitoring  
+- **HTTP REST API**: Shelf-based HTTP server with CRUD operation support
+- **Service Orchestration**: Unified management of all networking services
+- **Health Monitoring**: Automatic health checks with failure recovery
+- **Highly Configurable**: Extensive configuration options for all services
+- **Production Ready**: Comprehensive error handling and resource management
+
 ## Technology Stack
-- **Framework**: Flutter
-- **Database**: SQLite (cashier app)
-- **Networking**: HTTP REST API, WebSocket, UDP
-- **State Management**: Provider pattern
-- **UI**: Material Design
+- **Framework**: Flutter/Dart
+- **HTTP Server**: Shelf framework with routing and middleware support
+- **WebSocket**: Multi-client server with heartbeat monitoring
+- **Discovery**: UDP multicast for automatic server discovery
+- **Serialization**: JSON with code generation
+- **Testing**: Comprehensive unit and integration tests
 
-## Data Models
-- **DiningTable**: Table information with status tracking
-- **Order**: Order records with items and status
-- **Product**: Product catalog with categories and pricing
-- **OrderItem**: Individual items within orders
-- **ServerInfo**: Server discovery and connection information
+## Package Usage
 
-## Network Communication
-- **HTTP REST API**: CRUD operations for data management with health checks
-- **WebSocket**: Real-time bidirectional communication with heartbeat monitoring
-- **UDP Broadcast**: Automatic server discovery with network change detection
-- **Connection Health**: Automatic monitoring and recovery mechanisms
-- **Data Synchronization**: Real-time updates with automatic resync after reconnection
+### Installation
+Add to your `pubspec.yaml`:
+```yaml
+dependencies:
+  restaurant_local_server: ^1.0.0
+```
+
+### Quick Start
+```dart
+import 'package:restaurant_local_server/restaurant_local_server.dart';
+
+final config = LocalServerConfig(
+  serverName: 'My Application Server',
+  version: '1.0.0',
+  httpPort: 8080,
+  webSocketPort: 8081,
+  discoveryPort: 8082,
+);
+
+final serverManager = LocalServerManager(config: config);
+await serverManager.start();
+```
 
 ## Installation & Setup
-1. Clone the repository
-2. Navigate to each app directory
-3. Run `flutter pub get` in both apps
-4. Start cashier app first (server)
-5. Start waiter app and connect to server
 
-## Development Workflow
-1. **Cashier App Development**: Focus on server-side logic, database operations
-2. **Waiter App Development**: Focus on client-side UI, real-time updates
-3. **Integration Testing**: Test real-time synchronization between apps
-4. **Network Testing**: Verify discovery and connection mechanisms
-
-## Common Commands
+### For Package Development
 ```bash
-# Install dependencies for both apps
+# Install package dependencies
+cd restaurant_local_server && flutter pub get
+
+# Run code generation for models
+cd restaurant_local_server && flutter packages pub run build_runner build
+
+# Run package tests
+cd restaurant_local_server && flutter test
+```
+
+### For Example Applications
+```bash
+# Install dependencies for example apps
 cd cashier_app && flutter pub get
 cd ../waiter_app && flutter pub get
 
-# Run both apps simultaneously
+# Run example apps to see package in action
+cd cashier_app && flutter run &
+cd ../waiter_app && flutter run
+```
+
+### For Package Testing
+```bash
+# Install test app dependencies
+cd restaurant_local_server/local_server_test_app && flutter pub get
+
+# Run package test application
+cd restaurant_local_server/local_server_test_app && flutter run
+```
+
+## Development Workflow
+
+### Package Development
+1. **Core Package**: Develop networking services in `restaurant_local_server/lib/`
+2. **Model Updates**: Update shared models and run code generation
+3. **Testing**: Use test app in `restaurant_local_server/local_server_test_app/`
+4. **Documentation**: Update package README and examples
+
+### Application Development  
+1. **Server Apps**: Use package to build server-side applications
+2. **Client Apps**: Implement discovery and connection to servers
+3. **Integration Testing**: Test real-time synchronization between apps
+4. **Custom Routes**: Extend HTTP server with application-specific endpoints
+
+## Common Commands
+
+### Package Development
+```bash
+# Package setup and testing
+cd restaurant_local_server
+flutter pub get
+flutter packages pub run build_runner build --delete-conflicting-outputs
+flutter test
+
+# Test app for package
+cd local_server_test_app
+flutter pub get
+flutter run
+```
+
+### Example Applications
+```bash
+# Run restaurant management example
 cd cashier_app && flutter run &
 cd ../waiter_app && flutter run
 
-# Build APKs for both apps
-cd cashier_app && flutter build apk
-cd ../waiter_app && flutter build apk
+# Build production APKs
+cd cashier_app && flutter build apk --release
+cd ../waiter_app && flutter build apk --release
 ```
 
-## API Documentation
-See individual CLAUDE.md files in each app directory for detailed API endpoints and WebSocket message types.
+## Documentation Structure
+- **Package Documentation**: `restaurant_local_server/README.md` - Complete API reference
+- **Example Apps**: Individual CLAUDE.md files in `cashier_app/` and `waiter_app/`
+- **Package Testing**: Guides in `restaurant_local_server/local_server_test_app/`
+- **Functional Testing**: `FUNCTIONAL_TESTING_GUIDE.md` - End-to-end testing scenarios
 
-## Deployment
-- **Local Network**: Both apps communicate over local WiFi
-- **Production**: Configure firewall rules for required ports
-- **Scaling**: Support for multiple waiter apps per cashier app
+## Deployment Options
 
-## Security Considerations
-- Network communication over local WiFi
-- No external internet connectivity required
-- Basic validation for order data
-- Connection authentication via client identification
+### Package Distribution
+- **Pub.dev**: Publish package for public use
+- **Private Repository**: Host internally for organization use
+- **Local Development**: Use path dependency during development
 
-## Recent Enhancements
-- **Network Change Detection**: Automatic discovery restart when IP changes
-- **Connection Health Monitoring**: Visual indicators and heartbeat timeout detection
-- **Real-time Sync Recovery**: Automatic WebSocket listener reinitialization after reconnection
-- **Manual Refresh Capabilities**: User-initiated connection and discovery refresh
-- **Order Submission Fixes**: Immediate UI updates after order creation
-- **Comprehensive Testing Guide**: Detailed functional testing scenarios
+### Application Deployment
+- **Local Network**: Deploy apps on same WiFi network
+- **Production**: Configure firewall rules for required ports (8080, 8081, 8082)
+- **Scaling**: Package supports multiple client connections per server
 
-## Future Enhancements
-- User authentication and role management
-- Advanced reporting and analytics
-- Menu management interface
-- Kitchen display system integration
-- Payment processing integration
-- Offline mode with sync when reconnected
+## Evolution History
+1. **Phase 1**: Built cashier_app and waiter_app as proof-of-concept
+2. **Phase 2**: Extracted shared networking functionality into reusable package
+3. **Phase 3**: Created dedicated test app for package development
+4. **Current**: Maintained example apps showcasing package capabilities
 
-## Support
-- Check individual app CLAUDE.md files for specific troubleshooting
-- Verify network connectivity for connection issues
-- Review console logs for debugging information
-- Use manual refresh buttons for connection recovery
-- Check connection health indicators for status
-- Refer to FUNCTIONAL_TESTING_GUIDE.md for comprehensive testing scenarios
+## Future Development
+- **Package Enhancements**: Authentication, advanced routing, performance optimizations
+- **Example Extensions**: More complex business logic demonstrations
+- **Platform Support**: Enhanced cross-platform compatibility
+- **Documentation**: Video tutorials and advanced usage guides
+
+## Support & Resources
+- **Package Issues**: Report in `restaurant_local_server/` directory
+- **Example App Issues**: Check individual app CLAUDE.md files  
+- **Testing**: Use `local_server_test_app` for isolated testing
+- **Network Troubleshooting**: Refer to package README troubleshooting section
